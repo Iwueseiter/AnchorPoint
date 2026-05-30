@@ -1,5 +1,12 @@
 import type { Request, Response } from 'express';
 
+jest.mock('@prisma/client', () => ({
+  KYCStatus: {
+    PENDING: 'PENDING',
+    ACCEPTED: 'ACCEPTED',
+    REJECTED: 'REJECTED',
+  },
+}));
 const VALID_ACCOUNT = 'GD5DJQDKEBTHBQC7LKLDSLRGEA3KMRMFOKMJUEKSFZLWQ5E2PJDJYZNF';
 
 const prismaMock = {
