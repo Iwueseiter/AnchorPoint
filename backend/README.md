@@ -109,3 +109,4 @@ The backend uses a shared Nodemailer transport (`src/lib/smtp.service.ts`) for:
 - Hot wallet low-balance alerts
 
 Configure the SMTP variables above to enable delivery in staging or production.
+When SMTP is configured, the backend also sends HTML alert emails (for example hot-wallet low-balance notifications) using the same transport. Set `ALERT_EMAIL_RECIPIENTS` to a comma-separated list of operator addresses. If SMTP is not configured, alert content is logged at `info` level for local development.

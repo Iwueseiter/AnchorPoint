@@ -1,10 +1,13 @@
-import { Horizon } from '@stellar/stellar-sdk';
 import { stellarService } from './stellar.service';
 import { metricsService } from './metrics.service';
 import { redis } from '../lib/redis';
 import { smtpService } from '../lib/smtp.service';
+import type { AlertPayload } from '../types/alerts';
 import logger from '../utils/logger';
 import promClient, { Gauge } from 'prom-client';
+import { type AlertEmailService, SmtpAlertEmailService } from './alert-email.service';
+
+export type { AlertPayload } from '../types/alerts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,15 +31,6 @@ export interface WalletBalanceSnapshot {
   checkedAt: string;
 }
 
-export interface AlertPayload {
-  walletLabel: string;
-  publicKey: string;
-  assetCode: string;
-  currentBalance: number;
-  thresholdAmount: number;
-  checkedAt: string;
-}
-
 export interface AlertChannelConfig {
   /** Slack incoming-webhook URL */
   slackWebhookUrl?: string;
@@ -55,6 +49,8 @@ export interface HotWalletMonitorConfig {
   alertChannels?: AlertChannelConfig;
   /** Redis key TTL for de-duplication, in seconds (default: 3600) */
   alertCooldownSeconds?: number;
+  /** SMTP-backed alert email delivery */
+  alertEmailService?: AlertEmailService;
 }
 
 // ─── Prometheus gauges ────────────────────────────────────────────────────────
@@ -79,6 +75,7 @@ export class HotWalletMonitorService {
   private static instance: HotWalletMonitorService;
 
   private config: HotWalletMonitorConfig;
+  private readonly alertEmailService: AlertEmailService;
   private timer: ReturnType<typeof setInterval> | null = null;
   private readonly COOLDOWN_KEY_PREFIX = 'hot_wallet_alert:';
 
@@ -91,8 +88,10 @@ export class HotWalletMonitorService {
         emailRecipients: process.env.ALERT_EMAIL_RECIPIENTS,
         customWebhookUrl: process.env.ALERT_WEBHOOK_URL,
       },
+      alertEmailService: config.alertEmailService ?? new SmtpAlertEmailService(),
       ...config,
     };
+    this.alertEmailService = this.config.alertEmailService!;
   }
 
   public static getInstance(config?: HotWalletMonitorConfig): HotWalletMonitorService {
@@ -322,6 +321,8 @@ export class HotWalletMonitorService {
     if (sent) {
       logger.info('[HotWalletMonitor] Email alert sent', { wallet: alert.walletLabel, recipients });
     }
+    await this.alertEmailService.sendHotWalletLowBalanceAlert(recipients, alert);
+    logger.info('[HotWalletMonitor] Email alert dispatched', { wallet: alert.walletLabel });
   }
 
   private async sendCustomWebhook(url: string, alert: AlertPayload): Promise<void> {
