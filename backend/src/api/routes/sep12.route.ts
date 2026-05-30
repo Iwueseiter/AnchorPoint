@@ -32,7 +32,7 @@ const upload = multer({ storage: storage });
  *     summary: Upload customer information and documents
  *     tags: [SEP-12]
  */
-router.put('/customer', upload.any(), sep12Controller.putCustomer);
+router.put('/customer', upload.any(), sep12Controller.putCustomer.bind(sep12Controller));
 
 /**
  * @swagger
@@ -41,7 +41,7 @@ router.put('/customer', upload.any(), sep12Controller.putCustomer);
  *     summary: Get customer KYC status
  *     tags: [SEP-12]
  */
-router.get('/customer', sep12Controller.getCustomer);
+router.get('/customer', sep12Controller.getCustomer.bind(sep12Controller));
 
 /**
  * @swagger
@@ -50,7 +50,7 @@ router.get('/customer', sep12Controller.getCustomer);
  *     summary: Delete customer PII
  *     tags: [SEP-12]
  */
-router.delete('/customer/:account', sep12Controller.deleteCustomer);
+router.delete('/customer/:account', sep12Controller.deleteCustomer.bind(sep12Controller));
 
 /**
  * @swagger
@@ -59,6 +59,6 @@ router.delete('/customer/:account', sep12Controller.deleteCustomer);
  *     summary: Webhook for 3rd party KYC provider updates
  *     tags: [SEP-12]
  */
-router.post('/webhook', sep12Controller.handleWebhook);
+router.post('/webhook', sep12Controller.handleWebhook.bind(sep12Controller));
 
 export default router;

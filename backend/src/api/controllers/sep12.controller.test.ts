@@ -1,5 +1,13 @@
 import type { Request, Response } from 'express';
 
+jest.mock('@prisma/client', () => ({
+  KYCStatus: {
+    PENDING: 'PENDING',
+    ACCEPTED: 'ACCEPTED',
+    REJECTED: 'REJECTED',
+  },
+}));
+
 const prismaMock = {
   user: {
     findUnique: jest.fn(),
