@@ -323,11 +323,7 @@ impl EventHub {
 
         contracts.keys()
     }
-        let mut result = Vec::new(&env);
-        let keys = contracts.keys();
-        for i in 0..keys.len() {
-            result.push_back(keys.get(i).unwrap());
-        }
+
 
     fn is_registered_source(env: &Env, contract: &Address) -> bool {
         let contracts: Map<Address, bool> = env

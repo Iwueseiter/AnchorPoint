@@ -4,13 +4,12 @@ ALTER TABLE "User" ADD COLUMN "phone" TEXT;
 -- CreateTable
 CREATE TABLE "Quote" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "sourceAsset" TEXT NOT NULL,
-    "sourceAmount" TEXT NOT NULL,
-    "destinationAsset" TEXT NOT NULL,
-    "destinationAmount" TEXT,
-    "price" TEXT,
-    "expiresAt" DATETIME NOT NULL,
-    "context" TEXT,
+    "sellAsset" TEXT NOT NULL,
+    "sellAmount" TEXT NOT NULL,
+    "buyAsset" TEXT NOT NULL,
+    "buyAmount" TEXT NOT NULL,
+    "price" TEXT NOT NULL,
+    "expiresAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
@@ -67,7 +66,10 @@ CREATE TABLE "ContractJob" (
 );
 
 -- CreateIndex
-CREATE INDEX "Quote_expiresAt_idx" ON "Quote"("expiresAt");
+CREATE INDEX "Quote_sellAsset_idx" ON "Quote"("sellAsset");
+
+-- CreateIndex
+CREATE INDEX "Quote_buyAsset_idx" ON "Quote"("buyAsset");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NotificationPreference_userId_key" ON "NotificationPreference"("userId");

@@ -2,8 +2,7 @@
 //! SEP-41 Compatible Token Wrapper
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, IntoVal, String,
-};
+    contract, contractimpl, contracttype, symbol_short, Address, Env, IntoVal, String,};
 
 #[contracttype]
 pub enum DataKey {
@@ -18,8 +17,7 @@ pub enum DataKey {
     Decimals,
     PermitNonce(u64, Address, Address),
     UserLastLedger(u64, Address),
-    BalanceSnapshot(u64, Address, u32),
-}
+    BalanceSnapshot(u64, Address, u32),}
 
 #[contract]
 pub struct TokenContract;
@@ -368,14 +366,13 @@ impl TokenContract {
                 &current_ledger,
             );
         }
-    }
-}
+    }}
 
 #[cfg(test)]
 mod tests {
     extern crate std;
     use super::*;
-    use soroban_sdk::{testutils::{Address as _, Ledger as _}, Env, String};
+    use soroban_sdk::{testutils::{Address as _, Ledger}, Env, String};
 
     fn setup() -> (Env, TokenContractClient<'static>, Address) {
         let env = Env::default();
@@ -533,6 +530,7 @@ mod tests {
         client.permit(&owner, &spender, &token_id, &100, &0, &200);
     }
 
+    #[test]
     #[should_panic(expected = "length mismatch")]
     fn test_batch_transfer_length_mismatch() {
         let (env, client, _) = setup();
@@ -546,7 +544,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "already initialized")]
     fn test_initialize_twice_panics() {
-        let (env, client, _admin) = setup();
+        let (env, client, admin) = setup();
         client.initialize(
             &admin,
             &7u32,
@@ -587,14 +585,13 @@ mod tests {
 
     #[test]
     fn test_set_metadata_authorized() {
-        let (env, client, admin) = setup();
+        let (env, client, _admin) = setup();
         let token_id = 1u64;
         let uri = String::from_str(&env, "ipfs://test");
 
         client.set_token_metadata(&token_id, &uri);
         assert_eq!(client.get_token_metadata(&token_id), uri);
     }
-}
 
 /// ============================================================================
 /// Formal Verification Invariants
@@ -606,7 +603,7 @@ mod tests {
 mod invariants {
     extern crate std;
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Env, String};
+    use soroban_sdk::{Env, String};
 
     /// Helper to set up a fresh contract instance
     fn setup_fresh() -> (Env, TokenContractClient<'static>, Address) {
@@ -1039,4 +1036,4 @@ mod invariants {
             "PROPERTY VIOLATION: Round-trip transfer didn't restore receiver balance"
         );
     }
-}
+}}

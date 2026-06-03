@@ -47,7 +47,6 @@ jobs:
         env:
           DATABASE_URL: "file:./ci-verify.db"
         run: node scripts/validate-migration-env.js
-
       - name: Verify Migrations Against Temporary Database
         env:
           DATABASE_URL: "file:./ci-verify.db"
