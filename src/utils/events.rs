@@ -121,6 +121,7 @@ pub fn emit_event(env: &Env, event: AnchorEvent) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soroban_sdk::Val;
     use soroban_sdk::{
         contract, contractimpl, testutils::Address as _, testutils::Events, vec, FromVal, IntoVal,
         Val,

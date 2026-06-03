@@ -80,15 +80,24 @@ export const getChallenge = async (
     // Store the challenge in Redis with TTL
     await storeChallenge(redisService, account, challenge);
 
-    // In a real implementation, you would create a Stellar transaction
-    // with the challenge as a manage_data operation
+    const anchorPublicKey = config.ANCHOR_PUBLIC_KEY || 'GBAD_PUBLIC_KEY'; // Default for demo
+    const networkType = config.STELLAR_NETWORK === 'public' ? NetworkType.PUBLIC : NetworkType.TESTNET;
+
+    // Generate a SEP-10 challenge transaction
+    const sep10Challenge = generateSep10ChallengeTransaction(
+      anchorPublicKey,
+      account,
+      networkType
+    );
+
+    // Store the challenge in Redis
+    await storeSep10Challenge(redisService, account, sep10Challenge);
+
     const response: ChallengeResponse = {
-      transaction: challenge, // Simplified - should be a base64 encoded transaction
-      network_passphrase: config.STELLAR_NETWORK_PASSPHRASE,
+      transaction: sep10Challenge.transactionXdr || sep10Challenge.challenge,
+      network_passphrase: sep10Challenge.networkPassphrase || config.STELLAR_NETWORK_PASSPHRASE || 'Test SDF Network ; September 2015',
       multiKeyChallenge
     };
-
-    return res.json(response);
 
     return res.json(response);
   } catch (error) {
@@ -163,10 +172,6 @@ export const getToken = async (
     }
     
     // Single-key authentication (existing logic)
-    const mockAccount = 'GBAD_PUBLIC_KEY'; // In real implementation, extract from transaction
-    const storedChallenge = await getChallengeFromRedis(redisService, mockAccount);
-
-    if (!storedChallenge || storedChallenge.challenge !== transaction) {
     const networkType = config.STELLAR_NETWORK === 'public' ? NetworkType.PUBLIC : NetworkType.TESTNET;
 
     // Extract the account from the signed transaction
@@ -281,49 +286,3 @@ async function validateHardwareWalletSignature(
     }
   }
 }
-
-/**
- * Validate hardware wallet signature
- * @param transaction Signed transaction XDR
- * @param networkType Stellar network type
- * @returns Promise<boolean> Whether this is a hardware wallet signature
- */
-async function validateHardwareWalletSignature(
-  transaction: string,
-  networkType: NetworkType
-): Promise<boolean> {
-  try {
-    // Hardware wallets typically use different signing patterns
-    // Check for common hardware wallet signatures
-    const transactionObj = JSON.parse(transaction);
-    
-    // For Trezor/Ledger, check if the transaction has specific hardware wallet indicators
-    // This is a simplified check - real implementation would be more sophisticated
-    if (transactionObj && typeof transactionObj === 'object') {
-      // Look for hardware wallet specific fields
-      const hasHardwareIndicators = (
-        transactionObj.hardwareWallet ||
-        transactionObj.trezor ||
-        transactionObj.ledger ||
-        transactionObj.signerType === 'hardware'
-      );
-      
-      return hasHardwareIndicators;
-    }
-    
-    return false;
-  } catch (error) {
-    // If parsing fails, it might be a valid XDR string
-    // Try to parse as XDR instead
-    try {
-      // In real implementation, we'd use Stellar SDK to parse XDR
-      // For now, just check if it looks like XDR
-      if (transaction.length > 100 && transaction.length < 2000) {
-        return true; // Assume hardware wallet for longer transactions
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }
-};
