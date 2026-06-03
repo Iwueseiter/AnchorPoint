@@ -1,74 +1,229 @@
 # Contributing to AnchorPoint
 
-Thank you for your interest in contributing to AnchorPoint. This guide is intended for open source developers who want to help improve documentation, fix issues, and add features in a way that aligns with the repository's standards.
+Thank you for your interest in contributing to AnchorPoint! This guide will help you get started.
 
-## Good First Issue Labels
+## Development Setup
 
-The `Good First Issue` label is used to identify tasks that are suitable for first-time contributors and contributors who are new to the repository.
+### Prerequisites
 
-### When to use `Good First Issue`
-- The issue is limited in scope and clearly defined.
-- The task does not require deep domain knowledge of the codebase.
-- There is an obvious implementation path or documentation update.
-- The issue can be completed without modifying large portions of the repository.
+- **Node.js** >= 18.x
+- **npm** >= 9.x
+- **Rust** and **Cargo** (for smart contracts)
+- **Docker** and **Docker Compose** (optional, for full stack)
 
-### What contributors should expect
-- Clear acceptance criteria in the issue description.
-- Minimal risk of breaking adjacent features.
-- Review and guidance from maintainers.
-- A request to follow the existing coding and documentation style.
+### Getting Started
 
-### How to find `Good First Issue`
-- Search the issue tracker for the `Good First Issue` label.
-- Review related repository documentation before starting.
-- Ask maintainers for clarification if the task scope is uncertain.
+1. **Clone the repository:**
 
-## How to Get Started
+   ```bash
+   git clone https://github.com/ceejaylaboratory/AnchorPoint.git
+   cd AnchorPoint
+   ```
 
-1. Fork the repository.
-2. Create a branch with a descriptive name, for example:
-   - `fix/docs-good-first-issue`
-   - `docs/bullmq-worker-setup`
-3. Make your changes in the forked repository.
-4. Open a pull request against `main`.
+2. **Install dependencies:**
 
-## Contribution Standards
+   ```bash
+   # Backend
+   cd backend && npm install
 
-### Documentation
-- Add documentation in markdown files located in the repository root or `docs/`.
-- Keep content factual, short, and consistent with existing documentation style.
-- Avoid changing formatting or file structure unless the issue explicitly requires it.
+   # Dashboard (frontend)
+   cd ../dashboard && npm install
+   ```
 
-### Code and Tests
-- Follow existing patterns in the repository.
-- Do not refactor unrelated code.
-- Add or update tests only if the issue explicitly requests them.
-- When updating backend functionality, make sure errors are handled safely and do not expose secrets.
+3. **Set up environment variables:**
 
-### Pull Request Guidelines
-- Provide a short summary of the changes.
-- Reference the related issue number when available.
-- Include a brief QA checklist if applicable.
-- Verify the change is self-contained and minimal.
+   ```bash
+   cd backend
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-## Manual QA Steps
+4. **Run database migrations:**
 
-When contributing to AnchorPoint, verify your change with the following steps:
+   ```bash
+   cd backend
+   npx prisma migrate dev
+   ```
 
-1. Confirm the documentation or code change is present in your branch.
-2. If the change affects backend behavior, run relevant tests:
-   - `cd backend && npm test`
-3. If the change affects frontend behavior, run the frontend locally and verify the affected flows.
-4. Check for broken links if you add new documentation files.
-5. Review the pull request diff to ensure only the intended files were modified.
+5. **Start the development servers:**
 
-## Best Practices for Open Source Developers
+   ```bash
+   # Backend (from /backend)
+   npm run dev
 
-- Review `IMPLEMENTATION_SUMMARY.md` and `TASK_QUEUE_SUMMARY.md` when working on backend or task queue related issues.
-- Preserve the repository's existing structure and naming conventions.
-- Do not add new dependencies unless the issue explicitly requires them.
-- Use the issue's acceptance criteria to confirm completion.
+   # Dashboard (from /dashboard)
+   npm run dev
+   ```
 
-## Repository Contact
+### Using Docker (Full Stack)
 
-If you need help, open an issue or request feedback on an existing issue thread. Maintain the repository's security and quality standards by avoiding accidental exposure of environment variables, secrets, or private keys.
+```bash
+docker-compose up -d
+```
+
+This starts the backend, Redis, Jaeger (tracing), and Prometheus (metrics).
+
+## Project Structure
+
+```
+AnchorPoint/
+├── backend/          # Node.js/TypeScript API server
+│   ├── src/          # Source code
+│   ├── prisma/       # Database schema and migrations
+│   ├── docs/         # Backend documentation
+│   └── scripts/      # Utility scripts
+├── dashboard/        # React/Vite frontend
+│   └── src/          # Source code (components, pages, hooks)
+├── contracts/        # Stellar smart contracts (Rust/Soroban)
+│   ├── anchorpoint/  # Core anchor contract
+│   ├── staking/      # Staking contract
+│   ├── swap/         # Token swap contract
+│   └── ...           # Other contracts
+├── demo/             # Mock anchor server for local testing
+├── infra/            # Infrastructure configuration
+├── scripts/          # Project-level scripts
+└── tools/            # Development tools
+```
+
+## How to Contribute
+
+### Reporting Bugs
+
+1. Check [existing issues](https://github.com/ceejaylaboratory/AnchorPoint/issues) to avoid duplicates.
+2. Open a new issue with the **bug** label.
+3. Include:
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Environment details (OS, Node version, etc.)
+
+### Suggesting Features
+
+1. Open an issue with the **enhancement** label.
+2. Describe the use case and proposed solution.
+3. Wait for discussion before implementing.
+
+### Submitting Changes
+
+1. **Fork** the repository.
+2. **Create a branch** from `main`:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make your changes** following the code style guidelines below.
+4. **Write or update tests** for your changes.
+5. **Commit** with a clear message:
+   ```bash
+   git commit -m "feat: add virtual scrolling to transaction list"
+   ```
+6. **Push** to your fork:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+7. **Open a Pull Request** against `main`.
+
+### Commit Message Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+type(scope): short description
+
+Optional longer description.
+```
+
+**Types:**
+- `feat` — New feature
+- `fix` — Bug fix
+- `docs` — Documentation changes
+- `style` — Formatting, no code change
+- `refactor` — Code restructuring
+- `test` — Adding or updating tests
+- `chore` — Build process, dependencies
+
+**Examples:**
+```
+feat(dashboard): add dark mode toggle
+fix(backend): handle expired JWT tokens gracefully
+docs: update README with setup instructions
+```
+
+## Code Style
+
+### Backend (TypeScript)
+
+- Use **TypeScript** strict mode.
+- Run linter before committing:
+  ```bash
+  cd backend && npm run lint
+  ```
+- Run tests:
+  ```bash
+  cd backend && npm test
+  ```
+
+### Dashboard (React/TypeScript)
+
+- Use **functional components** with hooks.
+- Use **Tailwind CSS** for styling.
+- Follow the existing component structure in `src/components/`.
+
+### Contracts (Rust/Soroban)
+
+- Run tests:
+  ```bash
+  cd contracts
+  cargo test
+  ```
+- Ensure no compiler warnings:
+  ```bash
+  cargo clippy
+  ```
+
+## Testing
+
+### Backend Tests
+
+```bash
+cd backend
+npm test                 # Run all tests
+npm test -- --watch      # Watch mode
+```
+
+### Contract Tests
+
+```bash
+cd contracts
+cargo test               # Run all contract tests
+```
+
+### Manual Testing
+
+1. Start the demo server:
+   ```bash
+   cd demo && npm start
+   ```
+2. Start the dashboard:
+   ```bash
+   cd dashboard && npm run dev
+   ```
+3. Open http://localhost:5173 in your browser.
+
+## Pull Request Guidelines
+
+- Keep PRs focused — one feature or fix per PR.
+- Include a clear description of what changed and why.
+- Reference related issues (e.g., `Closes #42`).
+- Ensure CI passes before requesting review.
+- Be responsive to review feedback.
+
+## Code of Conduct
+
+Please be respectful and constructive in all interactions. We are building a welcoming community for developers of all backgrounds.
+
+## Questions?
+
+If you have questions, feel free to:
+- Open a [discussion](https://github.com/ceejaylaboratory/AnchorPoint/issues) on GitHub
+- Check existing documentation in the `docs/` directories
+
+Thank you for contributing to AnchorPoint!
