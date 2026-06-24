@@ -54,6 +54,8 @@ const SortIcon = ({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir: 
 export const TransactionHistory = () => {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | 'All'>('All');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
@@ -76,9 +78,11 @@ export const TransactionHistory = () => {
         tx.reference.toLowerCase().includes(q) ||
         tx.status.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'All' || tx.status === statusFilter;
-      return matchesQuery && matchesStatus;
+      const matchesFrom = !dateFrom || tx.date >= dateFrom;
+      const matchesTo = !dateTo || tx.date <= dateTo;
+      return matchesQuery && matchesStatus && matchesFrom && matchesTo;
     });
-  }, [query, statusFilter]);
+  }, [query, statusFilter, dateFrom, dateTo]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -124,7 +128,26 @@ export const TransactionHistory = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="date-from" className="sr-only">From date</label>
+          <input
+            id="date-from"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            aria-label="Filter from date"
+            className="input-field text-sm"
+          />
+          <label htmlFor="date-to" className="sr-only">To date</label>
+          <input
+            id="date-to"
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            aria-label="Filter to date"
+            className="input-field text-sm"
+          />
+
           <label htmlFor="status-filter" className="sr-only">Filter by status</label>
           <select
             id="status-filter"
