@@ -70,6 +70,7 @@ export const TransactionHistory = () => {
     return ALL_TRANSACTIONS.filter((tx) => {
       const matchesQuery =
         !q ||
+        tx.id.toLowerCase().includes(q) ||
         tx.type.toLowerCase().includes(q) ||
         tx.asset.toLowerCase().includes(q) ||
         tx.reference.toLowerCase().includes(q) ||
@@ -115,7 +116,7 @@ export const TransactionHistory = () => {
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
           <input
             type="search"
-            placeholder="Search by type, asset, reference…"
+            placeholder="Search by ID, type, asset, reference…"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             aria-label="Search transactions"
