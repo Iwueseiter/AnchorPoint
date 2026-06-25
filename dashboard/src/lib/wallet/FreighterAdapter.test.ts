@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { FreighterAdapter } from './FreighterAdapter';
 
+type TestFreighterApi = NonNullable<Window['freighterApi']>;
+
+const setFreighterApi = (api: Partial<TestFreighterApi>) => {
+  globalThis.window.freighterApi = api as TestFreighterApi;
+};
+
 describe('FreighterAdapter', () => {
   let adapter: FreighterAdapter;
 
@@ -8,8 +14,7 @@ describe('FreighterAdapter', () => {
     adapter = new FreighterAdapter();
     // Clear global window property before each test
     Reflect.deleteProperty(globalThis, 'window');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    globalThis.window = {} as any;
+    globalThis.window = {} as Window & typeof globalThis;
   });
 
   describe('isInstalled', () => {
@@ -19,8 +24,7 @@ describe('FreighterAdapter', () => {
     });
 
     it('returns true when window.freighterApi is defined', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis.window as any).freighterApi = {};
+      setFreighterApi({});
       const installed = await adapter.isInstalled();
       expect(installed).toBe(true);
     });
@@ -32,29 +36,26 @@ describe('FreighterAdapter', () => {
     });
 
     it('throws error if connection cancelled', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis.window as any).freighterApi = {
+      setFreighterApi({
         isConnected: vi.fn().mockResolvedValue(false),
-      };
+      });
       await expect(adapter.connect()).rejects.toThrow('User cancelled connection');
     });
 
     it('returns publicKey and network on successful connection', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis.window as any).freighterApi = {
+      setFreighterApi({
         isConnected: vi.fn().mockResolvedValue(true),
         getPublicKey: vi.fn().mockResolvedValue('GB...TEST'),
         getNetwork: vi.fn().mockResolvedValue('TESTNET'),
-      };
+      });
       const result = await adapter.connect();
       expect(result).toEqual({ publicKey: 'GB...TEST', network: 'TESTNET' });
     });
     
     it('wraps and throws api errors', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis.window as any).freighterApi = {
+      setFreighterApi({
         isConnected: vi.fn().mockRejectedValue(new Error('Extension error')),
-      };
+      });
       await expect(adapter.connect()).rejects.toThrow('Failed to connect to Freighter: Extension error');
     });
   });
@@ -65,14 +66,13 @@ describe('FreighterAdapter', () => {
     });
 
     it('returns signed xdr successfully', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis.window as any).freighterApi = {
-        signTransaction: vi.fn().mockResolvedValue('signed_xdr_data'),
-      };
+      const signTransaction = vi.fn().mockResolvedValue('signed_xdr_data');
+      setFreighterApi({
+        signTransaction,
+      });
       const result = await adapter.signTransaction('some_xdr', 'TESTNET');
       expect(result).toBe('signed_xdr_data');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect((globalThis.window as any).freighterApi.signTransaction).toHaveBeenCalledWith('some_xdr', { network: 'TESTNET' });
+      expect(signTransaction).toHaveBeenCalledWith('some_xdr', { network: 'TESTNET' });
     });
   });
 
