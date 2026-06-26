@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --primary: #2563eb;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
   --primary-text: #93c5fd;
   --background: #020617;
   --card: #0f172a;
-  --accent: #0f766e;
+  --accent: #8b5cf6;
   --accent-text: #5eead4;
   --slate-400: #94a3b8;
   --slate-500: #64748b;
@@ -68,11 +68,15 @@
   .glass-card {
     @apply bg-slate-900/50 backdrop-blur-md border border-slate-500 rounded-xl overflow-hidden;
   }
-  
+
   .btn-primary {
     @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium transition-all hover:brightness-110 active:scale-95;
   }
-  
+
+  .action-button {
+    @apply transform-gpu transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed;
+  }
+
   .input-field {
     @apply bg-slate-900 border border-slate-600 text-slate-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-text transition-all;
   }
