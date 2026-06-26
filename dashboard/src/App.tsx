@@ -17,8 +17,9 @@ import type { UiConfig } from './types';
 import { LogoMark } from './components/LogoMark';
 import { RequirementList } from './components/RequirementList';
 import { NotificationBell } from './components/NotificationBell';
+import { CopyablePublicKey } from './components/CopyablePublicKey';
+import { FreighterAdapter } from './lib/wallet/FreighterAdapter';
 
-// Lazy-load heavy tab views so they are only fetched when first visited
 const DashboardOverview = lazy(() => import('./components/DashboardOverview'));
 const TransactionHistory = lazy(() => import('./components/TransactionHistory'));
 const SEP24Flow = lazy(() => import('./components/SEP24Flow'));
@@ -57,9 +58,8 @@ const fallbackAccentText = '#5eead4';
 
 const hexToRgb = (hexColor: string): [number, number, number] | null => {
   const normalized = hexColor.replace('#', '').trim();
-  const hex = normalized.length === 3
-    ? normalized.split('').map((char) => `${char}${char}`).join('')
-    : normalized;
+  const hex =
+    normalized.length === 3 ? normalized.split('').map((char) => `${char}${char}`).join('') : normalized;
 
   if (!/^[0-9a-f]{6}$/i.test(hex)) {
     return null;
@@ -95,13 +95,11 @@ const contrastRatio = (foreground: string, background: string): number => {
   return (lighter + 0.05) / (darker + 0.05);
 };
 
-const getAccessibleTextColor = (brandColor: string, fallbackColor: string) => (
-  contrastRatio(brandColor, darkSurface) >= 4.5 ? brandColor : fallbackColor
-);
+const getAccessibleTextColor = (brandColor: string, fallbackColor: string) =>
+  contrastRatio(brandColor, darkSurface) >= 4.5 ? brandColor : fallbackColor;
 
-const getAccessibleForeground = (backgroundColor: string) => (
-  contrastRatio(lightText, backgroundColor) >= 4.5 ? lightText : darkSurface
-);
+const getAccessibleForeground = (backgroundColor: string) =>
+  contrastRatio(lightText, backgroundColor) >= 4.5 ? lightText : darkSurface;
 
 const TabFallback = () => (
   <div className="flex h-48 items-center justify-center" role="status" aria-label="Loading content">
@@ -114,6 +112,10 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [uiConfig, setUiConfig] = useState<UiConfig>(defaultUiConfig);
   const [loadingState, setLoadingState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [wallet, setWallet] = useState<{ publicKey: string; network: string } | null>(null);
+  const [walletStatus, setWalletStatus] = useState<'idle' | 'connecting' | 'error'>('idle');
+  const [walletError, setWalletError] = useState('');
+  const walletAdapter = useMemo(() => new FreighterAdapter(), []);
 
   useEffect(() => {
     let ignore = false;
@@ -171,6 +173,20 @@ const App = () => {
     ],
     [],
   );
+
+  const handleConnectWallet = async () => {
+    setWalletStatus('connecting');
+    setWalletError('');
+
+    try {
+      const connectedWallet = await walletAdapter.connect();
+      setWallet(connectedWallet);
+      setWalletStatus('idle');
+    } catch (error) {
+      setWalletStatus('error');
+      setWalletError(error instanceof Error ? error.message : 'Unable to connect wallet.');
+    }
+  };
 
   return (
     <div
@@ -249,7 +265,7 @@ const App = () => {
             aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
             aria-expanded={sidebarOpen}
             aria-controls="main-sidebar"
-            className="lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-text rounded"
+            className="lg:hidden rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-text"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
@@ -281,10 +297,28 @@ const App = () => {
               apiBaseUrl={apiBaseUrl}
               onViewAll={() => setActiveTab('notifications')}
             />
-            <button className="flex items-center gap-2 rounded-lg border border-slate-500 bg-slate-900 px-4 py-2 transition-all hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-text">
-              <Wallet size={18} aria-hidden="true" />
-              <span className="text-sm font-medium">Connect Wallet</span>
-            </button>
+            <div className="flex min-w-0 items-center gap-2">
+              {wallet ? (
+                <CopyablePublicKey publicKey={wallet.publicKey} label={`${wallet.network} public key`} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConnectWallet}
+                  disabled={walletStatus === 'connecting'}
+                  className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                >
+                  <Wallet size={18} aria-hidden="true" />
+                  <span className="text-sm font-medium">
+                    {walletStatus === 'connecting' ? 'Connecting...' : 'Connect Wallet'}
+                  </span>
+                </button>
+              )}
+              {walletStatus === 'error' && !wallet ? (
+                <span className="hidden max-w-48 truncate text-xs text-rose-300 md:inline" role="alert">
+                  {walletError}
+                </span>
+              ) : null}
+            </div>
           </div>
         </header>
 
@@ -429,14 +463,8 @@ const App = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-6">
-                      <RequirementList
-                        title="Deposit Fields"
-                        fields={uiConfig.fieldRequirements.deposit}
-                      />
-                      <RequirementList
-                        title="Withdrawal Fields"
-                        fields={uiConfig.fieldRequirements.withdraw}
-                      />
+                      <RequirementList title="Deposit Fields" fields={uiConfig.fieldRequirements.deposit} />
+                      <RequirementList title="Withdrawal Fields" fields={uiConfig.fieldRequirements.withdraw} />
                     </div>
                   </div>
                 )}

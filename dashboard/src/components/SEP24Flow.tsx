@@ -8,12 +8,7 @@ import { AssetDropdown } from './AssetDropdown';
 import type { AssetOption } from './AssetDropdown';
 import type { UiConfig } from '../types';
 
-const STEP_LABELS = [
-  'Select Asset',
-  'Fill Details',
-  'Identity Verification',
-  'Transaction Complete',
-] as const;
+const STEP_LABELS = ['Select Asset', 'Fill Details', 'Identity Verification', 'Transaction Complete'] as const;
 
 const DEPOSIT_STEPS = [1, 3, 4] as const;
 const WITHDRAW_STEPS = [1, 2, 3, 4] as const;
@@ -124,7 +119,10 @@ export const SEP24Flow = ({ type, uiConfig }: { type: 'deposit' | 'withdraw'; ui
               <p className="text-slate-400">
                 The anchor is supplying the field requirements for this flow from the backend configuration.
               </p>
-              <ul className="grid list-none grid-cols-1 gap-3 p-0 m-0" aria-label={`Available assets for ${flowLabel.toLowerCase()}`}>
+              <ul
+                className="grid list-none grid-cols-1 gap-3 p-0 m-0"
+                aria-label={`Available assets for ${flowLabel.toLowerCase()}`}
+              >
                 {(['USDC', 'EURT', 'ARST'] as const).map((asset) => (
                   <li key={asset}>
                     <button

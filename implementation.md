@@ -1,120 +1,53 @@
-# Issue 607 Implementation Notes
+# Implementation File: Transaction History Skeletal Loading
 
-## Scope
+## 1. Description & Objective
+This document outlines the technical implementation details for adding a skeletal loading state to the `TransactionHistory` component (Issue #603). The goal is to provide visual feedback to users while transaction data is being fetched, preventing sudden layout shifts and improving perceived performance.
 
-Issue: `[Dashboard] Audit Color Contrast Ratio for Accessibility Compliance`
+## 2. Design Decisions
+- **Simulated Network Delay:** Since the component currently uses static, synchronous mock data (`ALL_TRANSACTIONS`), a simulated delay (`setTimeout`) was added to model real-world asynchronous fetching.
+- **Tailwind CSS Utility Classes:** Instead of creating a separate reusable `Skeleton` component which would add boilerplate, we use Tailwind's `animate-pulse` utility inline. This keeps the implementation lean, reducing overhead while achieving the exact visual outcome required by the design system.
+- **Table Preservation:** The table headers and pagination controls remain visible during the loading state. This is an intentional UX decision so the user can see the structure of the data and interact with filters immediately once data lands.
+- **Skeleton Row Count:** The number of skeleton rows rendered dynamically matches the selected `pageSize`.
 
-This change is limited to the dashboard accessibility surface. It updates the dashboard theme tokens, rendered Tailwind classes, and Vite type declaration needed to validate the dashboard build. No backend, contract, database, lockfile, or SQLite changes are part of this implementation.
+## 3. Complexity Analysis
+- **Time Complexity:** 
+  - Rendering the skeletal state takes $O(P)$ time, where $P$ is the selected page size (e.g., 5, 10, 20). This is highly performant and does not introduce any complex logic or heavy array processing during the loading phase.
+- **Space Complexity:**
+  - The space complexity is $O(1)$ auxiliary space. The DOM tree growth is strictly bounded by the constant `pageSize` maximum of 20 elements, ensuring minimal memory footprint during the loading state.
 
-## Files Changed
+## 4. Code Explanations
+### `TransactionHistory.tsx`
+1. **State Addition:**
+   ```typescript
+   const [isLoading, setIsLoading] = useState(true);
+   ```
+   Controls whether the skeleton or the actual data is shown.
 
-| File | Purpose |
-| --- | --- |
-| `dashboard/src/App.tsx` | Adds accessible brand-color derivation and replaces low-contrast UI classes. |
-| `dashboard/src/index.css` | Updates default theme tokens and reusable component styles to use higher-contrast colors. |
-| `dashboard/tailwind.config.js` | Exposes `primary-text` and `accent-text` CSS variables to Tailwind utilities. |
-| `dashboard/src/vite-env.d.ts` | Adds the standard Vite client type declaration required for `import.meta.env` during `tsc`. |
+2. **Simulation Hook:**
+   ```typescript
+   useEffect(() => {
+     // Simulated 1s delay to mock asynchronous data fetching
+     const timer = setTimeout(() => setIsLoading(false), 1000);
+     return () => clearTimeout(timer);
+   }, []);
+   ```
+   Fires once on component mount. Clears the loading state after 1 second. Clean-up ensures the timer is removed if the component unmounts prematurely.
 
-## Accessibility Standard
-
-The audit uses WCAG contrast expectations:
-
-| Surface | Minimum Ratio |
-| --- | ---: |
-| Normal text | 4.5:1 |
-| Large text | 3:1 |
-| Icons and graphical UI controls | 3:1 |
-
-The dashboard has a dark base surface, so the primary failures were muted text using `text-slate-500`, thin `slate-800` borders used as control boundaries, and brand-colored text that could be supplied dynamically by backend configuration.
-
-## Design Decisions
-
-### Static Theme Tokens
-
-The default primary color was changed from `#3b82f6` to `#2563eb` because white text on `#3b82f6` does not meet the 4.5:1 normal-text threshold. `#2563eb` preserves the same blue visual identity while increasing white-on-primary contrast to approximately `5.17:1`.
-
-The default accent color was changed from purple to teal (`#0f766e`) and paired with `--accent-text: #5eead4`. This keeps the palette from relying on a low-contrast purple-blue family and gives accent text a high-contrast token on the dark surface.
-
-`--primary-text` and `--accent-text` were introduced because the same brand color cannot safely serve every role. A color that works as a button background may not work as text on the page, so text/icon usages now consume dedicated accessible text tokens.
-
-### Dynamic Backend Theme Colors
-
-The dashboard accepts `primaryColor` and `accentColor` from backend UI configuration. Static CSS cannot guarantee accessibility when those values are dynamic, so `App.tsx` derives safe CSS variables at render time:
-
-| Helper | Logic |
-| --- | --- |
-| `hexToRgb` | Parses 3-digit and 6-digit hex colors into RGB channels. Invalid values return `null` so the rest of the calculation remains deterministic. |
-| `relativeLuminance` | Implements the WCAG relative luminance formula using normalized sRGB channels. |
-| `contrastRatio` | Computes `(lighter + 0.05) / (darker + 0.05)` for two colors. |
-| `getAccessibleTextColor` | Uses the supplied brand color as text only when it reaches `4.5:1` on the dashboard background; otherwise it falls back to the accessible token. |
-| `getAccessibleForeground` | Chooses white text for brand backgrounds only when white reaches `4.5:1`; otherwise it uses the dark surface color. |
-
-This keeps the backend-driven branding behavior intact while preventing inaccessible foreground/background pairs.
-
-### Muted Text and UI Boundaries
-
-Low-contrast `text-slate-500` usages were lifted to `text-slate-400`. On the base background, `#94a3b8` reaches approximately `7.87:1`; on card surfaces it reaches approximately `6.96:1`.
-
-Borders that communicate card, table, input, and button boundaries were raised from `slate-800`/`slate-700` to `slate-600` or `slate-500`, depending on the component. The reusable card border now uses `slate-500`, which gives component edges a contrast ratio above the 3:1 non-text target on the dark dashboard background.
-
-### Build Type Declaration
-
-`dashboard/src/vite-env.d.ts` was added because the dashboard already reads `import.meta.env.VITE_API_BASE_URL`, but TypeScript did not have Vite client types loaded. Without this declaration, the required `npm run build` validation fails before Vite can bundle the app.
-
-## Contrast Checks
-
-Representative audited pairs:
-
-| Pair | Ratio | Result |
-| --- | ---: | --- |
-| `#94a3b8` muted text on `#020617` page background | 7.87:1 | Pass |
-| `#94a3b8` muted text on `#0f172a` card background | 6.96:1 | Pass |
-| `#ffffff` text on default `#2563eb` primary button | 5.17:1 | Pass |
-| `#020617` dynamic fallback text on original `#3b82f6` primary | 5.71:1 | Pass |
-| `#93c5fd` primary text token on `#020617` | 11.19:1 | Pass |
-| `#5eead4` accent text token on `#020617` | 13.64:1 | Pass |
-| `#64748b` component boundary on `#020617` | 4.24:1 | Pass |
-
-## Performance and Complexity
-
-The implementation adds no dependencies and performs only a handful of constant-time color calculations during render.
-
-Time complexity is `O(1)`: each render computes a fixed number of CSS custom properties from two configured colors. There are no loops over dashboard data, routes, tables, or user content.
-
-Space complexity is `O(1)`: the helpers allocate only tiny fixed-size arrays for RGB channels and do not store any persistent contrast audit state.
-
-Bundle impact is minimal because the helpers are small arithmetic functions and replace no existing runtime architecture. The approach avoids shipping a contrast library for a two-color theme boundary.
-
-## Validation
-
-Branch checked against remote before continuing:
-
-```sh
-git fetch origin
-```
-
-`origin/main` matched the local `main` commit at the time of implementation, so no refork or upstream merge was required.
-
-Required local validation:
-
-```sh
-cd dashboard
-npm run build
-```
-
-Result: passed.
-
-Build summary:
-
-```text
-tsc && vite build
-1920 modules transformed
-dist/index.html 0.84 kB
-dist/assets/index-CCR-cdyL.css 17.72 kB
-dist/assets/index-LnowqPWz.js 282.15 kB
-```
-
-## Repository Hygiene
-
-No lock files were modified for this issue. No SQLite files were modified or staged. Existing unrelated local changes, including `backend/tsconfig.json` and `CODEBASE_INDEX.md`, are intentionally outside this implementation scope.
-
+3. **Skeleton Rendering (JSX):**
+   ```tsx
+   {isLoading ? (
+     Array.from({ length: pageSize }).map((_, i) => (
+       <tr key={`skeleton-${i}`} className="border-b border-slate-800/50 last:border-0">
+         <td className="p-4"><div className="h-4 w-20 bg-slate-800 rounded animate-pulse" /></td>
+         <td className="p-4"><div className="h-4 w-12 bg-slate-800 rounded animate-pulse" /></td>
+         <td className="p-4"><div className="h-4 w-16 bg-slate-800 rounded animate-pulse" /></td>
+         <td className="p-4"><div className="h-6 w-20 bg-slate-800 rounded-full animate-pulse" /></td>
+         <td className="p-4"><div className="h-4 w-24 bg-slate-800 rounded animate-pulse" /></td>
+         <td className="p-4"><div className="h-4 w-24 bg-slate-800 rounded animate-pulse" /></td>
+       </tr>
+     ))
+   ) : paginated.length === 0 ? (
+     ...
+   )}
+   ```
+   Renders placeholder boxes for each column. We use `w-24`, `w-16`, etc., to roughly match the expected content widths, creating a realistic shimmer effect.
