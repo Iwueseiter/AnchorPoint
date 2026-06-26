@@ -32,7 +32,10 @@ jest.mock('../services/redis.service', () => ({
   }
 }));
 
-describe('AnchorPoint E2E Tests - Cross-Border Payment Flow', () => {
+const hasPostgresDatasource = /^postgres(ql)?:\/\//i.test(process.env.DATABASE_URL || '');
+const e2eSuite = hasPostgresDatasource ? describe : describe.skip;
+
+e2eSuite('AnchorPoint E2E Tests - Cross-Border Payment Flow', () => {
   const clientKeypair = Keypair.random();
   const clientPublicKey = clientKeypair.publicKey();
   let authToken = '';
