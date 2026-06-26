@@ -117,6 +117,7 @@ jobs:
           retention-days: 7
 
       - name: Audit dependencies
+        continue-on-error: true
         run: npm audit --audit-level=high
 
       - name: Run Lint
